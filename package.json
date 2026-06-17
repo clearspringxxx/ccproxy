@@ -1,0 +1,12 @@
+{
+  "name": "ccproxy",
+  "version": "1.0.0",
+  "description": "Smart network proxy skill for Claude Code",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clearspringxxx/ccproxy.git"
+  },
+  "keywords": ["claude", "claude-code", "proxy", "skill", "network", "agent-skills"],
+  "license": "MIT"
+}
