@@ -17,6 +17,19 @@ Claude Code 智能网络代理 —— 自动检测网络问题，智能将流量
 
 ---
 
+## 适用场景
+
+**适用情况：**
+- 在 Claude Code 中接入国产大模型,需要 **Bash 命令**(`curl`、`python`、`npm`、`git` 等)访问国外资源(GitHub、npm 仓库、文档站)。
+- 未开启 TUN/系统代理,需要按需、探测驱动的代理方式处理 Shell 命令。
+- 想要"只代理慢站"的精细控制,而非全局隧道。
+
+**不适用情况(请改用 Clash TUN/系统代理):**
+- 需要 **MCP server 自身的联网请求**走代理 —— ccproxy 覆盖不到(见[项目缺陷](#项目缺陷))。
+- 需要 Claude Code 外的所有程序流量都走代理。
+
+---
+
 ## 安装
 
 ### 方式一：git clone（推荐）
@@ -250,6 +263,22 @@ export HTTPS_PROXY="http://127.0.0.1:7890"
 1. 重试 3 次，每次间隔 2 秒
 2. 仍然失败：提醒用户启动代理软件
 3. 询问用户：`1` = 重试 | `0` = 取消
+
+---
+
+## 项目缺陷
+
+ccproxy 通过在**当前 Bash shell** 中导出 `HTTP_PROXY` / `HTTPS_PROXY` 生效,这带来硬性边界:
+
+- **仅覆盖 Bash 命令。** 它影响 Claude 通过 Bash 工具发起的请求(`curl`、`python urllib`、`wget`、`npm` 等)。
+- **不覆盖 MCP server 的请求。** MCP server 是 Claude Code 启动时拉起的独立进程,其流量不经过 Bash shell,`export` 对它们无效:
+  - `type: http` 远程 MCP(如 Tavily、Context7) — 由 Claude Code 主进程直接请求。
+  - stdio MCP server(如 Node 类) — Node 原生 `fetch` / `undici` 即便注入 env 也不读取 `HTTP_PROXY`。
+- **已启动的进程无法中途重配置。** `export` 只影响之后启动的进程。
+- **TCP 探测是尽力而为。** ccproxy 探测 TCP 端口 443 通断,GFW 的 TLS 层阻断(SNI 重置等)可能 TCP 通但实际无法访问。
+- **TUN 开启时探测被污染。** 若已开 TUN/系统代理,探测包本身被它接管,测到的是规则路由后的延迟而非真实直连速度。
+
+> **需要 MCP 流量走代理？** 请开启 Clash **TUN / 系统代理(规则模式)**。ccproxy 故意不覆盖 MCP —— 它保持为一个专盯 Claude 的小型 skill。
 
 ---
 

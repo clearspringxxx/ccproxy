@@ -17,6 +17,19 @@ Many users connect domestic LLMs in Claude Code, which may cause network issues 
 
 ---
 
+## When to use
+
+**Use ccproxy when:**
+- Connect Claude Code to a domestic LLM and need **Bash commands** (`curl`, `python`, `npm`, `git`, …) to reach foreign resources (GitHub, npm registry, doc sites).
+- You haven't enabled TUN / system-wide proxy and want on-demand, probe-driven proxying for shell commands.
+- You want fine-grained "only proxy slow sites" control instead of a global tunnel.
+
+**Do NOT use ccproxy for (enable Clash TUN / system proxy instead):**
+- Making **MCP servers' own network requests** go through the proxy — ccproxy cannot cover those (see [Limitations](#limitations)).
+- Tunneling traffic from programs outside Claude Code.
+
+---
+
 ## Installation
 
 ### Option 1: git clone (Recommended)
@@ -250,6 +263,22 @@ If detection fails:
 1. Retries 3 times with 2-second delays
 2. If still failing: reminds user to start proxy software
 3. Asks user: `1` = retry | `0` = cancel
+
+---
+
+## Limitations
+
+ccproxy works by exporting `HTTP_PROXY` / `HTTPS_PROXY` in the **current Bash shell**. This imposes hard boundaries:
+
+- **Only Bash commands are covered.** It affects requests Claude makes via the Bash tool (`curl`, `python urllib`, `wget`, `npm`, etc.).
+- **MCP server requests are NOT covered.** MCP servers run as separate processes spawned at Claude Code startup; their traffic never passes through the Bash shell, so `export` has no effect on them:
+  - `type: http` remote MCP (e.g. Tavily, Context7) — requested directly by the Claude Code main process.
+  - stdio MCP servers (e.g. Node-based) — Node's native `fetch` / `undici` does not honor `HTTP_PROXY` even if injected.
+- **Already-spawned processes can't be reconfigured mid-session.** `export` only affects processes started after it runs.
+- **TCP probing is best-effort.** ccproxy probes TCP port 443 reachability; GFW TLS-level blocking (SNI reset, etc.) may leave TCP open while actual access fails.
+- **Probing is polluted under TUN.** If TUN / system proxy is already on, probe packets are captured by it, so measured latency reflects the rule-routed path rather than a true direct connection.
+
+> **Need MCP traffic proxied?** Enable Clash **TUN / system proxy (Rule mode)** instead. ccproxy intentionally does not attempt to cover MCP — it stays a small, Claude-focused skill.
 
 ---
 
