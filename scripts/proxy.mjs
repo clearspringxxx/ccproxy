@@ -17,7 +17,7 @@ import { join } from "path";
 import { testDomainDirect, detectProxy, loadConfig, probePort, sleep, RETRY_COUNT } from "./detect.mjs";
 
 // ── Paths ───────────────────────────────────────────────────────────
-const SKILL_DIR = join(homedir(), ".claude", "skills", "proxy");
+const SKILL_DIR = join(homedir(), ".claude", "skills", "ccproxy");
 const CONFIG_PATH = join(SKILL_DIR, "config.json");
 const MARKER_START = "<!-- [proxy-skill:start] -->";
 const MARKER_END = "<!-- [proxy-skill:end] -->";
